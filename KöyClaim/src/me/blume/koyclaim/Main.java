@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
-import me.blume.koyclaim.commands.KöyKomutlarý;
+import me.blume.koyclaim.commands.KöyKurma;
 
 
 public class Main extends JavaPlugin {
@@ -14,9 +14,8 @@ public class Main extends JavaPlugin {
 	public static HashMap<UUID,String> bekleyenÝsimÖnerisi = new HashMap<UUID,String>();
 	@Override
 	public void onEnable() {
-		getCommand("koy").setExecutor(new KöyKomutlarý(this));
+		getCommand("koy").setExecutor(new KöyKurma(this));
 		loadConfig();
-		//getServer().getPluginManager().registerEvents(new TurnInvis(this), this);
 	}
 	@Override
 	public void onDisable() {
