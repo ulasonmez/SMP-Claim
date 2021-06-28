@@ -2,6 +2,7 @@ package me.blume.koyclaim.commands;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -46,10 +47,12 @@ public class KöyKomutları implements CommandExecutor{
 						kabul.setBold(true);
 						red.setBold(true);
 						if(!plugin.bekleyenDavetler.containsKey(davetEdilen.getUniqueId())) {
-						kabul.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,"/koy kabul "+player.getName()));
+							kabul.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,"/koy kabul "+player.getName()));
+							red.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,"/koy red "+player.getName()));
 						}
 						davetEdilen.sendMessage(aqua+player.getName()+green +" seni köyüne davet ediyor.");
 						davetEdilen.spigot().sendMessage(kabul);
+						davetEdilen.spigot().sendMessage(red);
 						plugin.bekleyenDavetler.put(davetEdilen.getUniqueId(),player.getUniqueId());
 					}
 					else if(args[0].equals("kabul")) {
@@ -70,10 +73,78 @@ public class KöyKomutları implements CommandExecutor{
 							player.sendMessage(kirmizi+"Seni bekleyen bir davet yok.");
 						}
 					}
+					else if(args[0].equals("red")) {
+						if(plugin.bekleyenDavetler.containsKey(player.getUniqueId())) {
+							Player davetEden = Bukkit.getPlayer(plugin.bekleyenDavetler.get(player.getUniqueId()));
+							if(args[1].equals(davetEden.getName())) {
+								player.sendMessage(aqua+davetEden.getName()+green+"' in köy davetini kabul etmedin.");
+								davetEden.sendMessage(aqua+player.getName()+kirmizi+" yolladığın isteği kabul etmedi.");
+								plugin.bekleyenDavetler.remove(player.getUniqueId());
+							}
+						}
+					}
+					else if(args[0].equals("isim")) {
+						String yeniÖneri = args[1];
+						String köyününİsmi = üyeninKöyününİsmi(player);
+						if(köyününİsmi!=null) {
+							UUID sahipUuid = köyünSahibi(köyününİsmi);
+							Player klanSahibi = Bukkit.getPlayer(sahipUuid);
+							klanSahibi.sendMessage(aqua+player.getName()+green+" köy için şu ismi öneriyor: "+yeniÖneri);
+							plugin.bekleyenİsimDegistirme.put(player.getUniqueId(), sahipUuid);
+							plugin.bekleyenİsimÖnerisi.put(sahipUuid, yeniÖneri);
+							TextComponent kabul1 = new TextComponent("Kabul et");
+							TextComponent red1 = new TextComponent("Reddet");
+							red1.setColor(kirmizi);
+							kabul1.setColor(green);
+							kabul1.setBold(true);
+							red1.setBold(true);
+							klanSahibi.spigot().sendMessage(kabul1);
+							klanSahibi.spigot().sendMessage(red1);
+							if(plugin.bekleyenİsimDegistirme.containsValue(klanSahibi.getUniqueId())) {
+									kabul1.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,"/koy isim kabul"));
+									red1.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,"/koy isim red"));
+								}
+							
+						}else {
+							player.sendMessage("İsim önerisi verebilmek için herhangi bir köye üye değilsin.");
+						}
+						
+					
+						if(args[1].equals("kabul")) {
+							if(plugin.bekleyenDavetler.containsValue(player.getUniqueId())) {
+								player.sendMessage(green+"Köyün ismi "+aqua+plugin.bekleyenİsimÖnerisi.get(player.getUniqueId())+green+" olarak değiştirildi.");
+								Player degisiklikİsteyen = Bukkit.getPlayer(plugin.bekleyenİsimDegistirme.get(player.getUniqueId()));
+								degisiklikİsteyen.sendMessage(green+"Köyün ismi sahibinin izin vermesiyle köyün adı istediğin gibi "+aqua+plugin.bekleyenİsimÖnerisi.get(player.getUniqueId())+green+" oldu");
+								plugin.getConfig().set(sahibinKöyününİsmi(player), plugin.bekleyenİsimÖnerisi.get(player.getUniqueId()));
+								plugin.bekleyenİsimDegistirme.remove(player.getUniqueId());
+								plugin.bekleyenİsimÖnerisi.remove(player.getUniqueId());
+							}else {
+								player.sendMessage("Sana gönderilen herhangi bir öneri gözükmüyor.");
+							}
+						}
+						else if(args[1].equals("red")) {
+							if(plugin.bekleyenDavetler.containsValue(player.getUniqueId())) {
+								Player degisiklikİsteyen = Bukkit.getPlayer(plugin.bekleyenİsimDegistirme.get(player.getUniqueId()));
+								degisiklikİsteyen.sendMessage(kirmizi+"Köy sahibi değişiklik isteğini kabul etmedi.");
+								plugin.bekleyenİsimDegistirme.remove(player.getUniqueId());
+								plugin.bekleyenİsimÖnerisi.remove(player.getUniqueId());
+							}
+						}
+					}
 				}
-			}
-			if(args[0].equals("list")) {
-				sender.sendMessage("Köyler: "+aqua+köyİsimleriniDöndür());
+				if(args[0].equals("list") && args.length==1) {
+					sender.sendMessage("Köyler: "+aqua+köyİsimleriniDöndür());
+				}
+				else if(args.length==1 && args[0].equals("list")) {
+					String köyİsmi = args[1];
+					if(köyİsimleriniDöndür().contains(köyİsmi)) {
+						String köySahibi = plugin.getConfig().getString(args[1]+"..koysahibi-ismi");
+						ArrayList<String> üyeler = köyİsimleriniDöndür();
+						player.sendMessage(kirmizi+köySahibi+" "+üyeler);
+					}else {
+						player.sendMessage(kirmizi+"Girdiğiniz isimde bir köy yok.");
+					}
+				}
 			}
 		}
 		return false;
@@ -92,6 +163,21 @@ public class KöyKomutları implements CommandExecutor{
 			if(p.getUniqueId().toString().equals(uuid)) {
 				return a;
 			}
+		}
+		return null;
+	}
+	public String üyeninKöyününİsmi(Player p) {
+		ArrayList<String> köyler = köyİsimleriniDöndür();
+		for(String a : köyler) {
+			List<String> üyeİsimleri = plugin.getConfig().getStringList(a+".üyeler");
+			if(üyeİsimleri.contains(p.getName())) return a;
+		}
+		return null;
+	}
+	public UUID köyünSahibi(String a) {
+		String uuid = plugin.getConfig().getString(a+".koysahibi-id");
+		for(Player p: Bukkit.getOnlinePlayers()) {
+			if(p.getUniqueId().toString().equals(uuid)) return p.getUniqueId();
 		}
 		return null;
 	}
